@@ -14,7 +14,280 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      alerts: {
+        Row: {
+          created_at: string | null
+          cve_id: string
+          device_id: string
+          id: string
+          notified_email: boolean | null
+          parc_id: string
+          status: Database["public"]["Enums"]["alert_status"] | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          cve_id: string
+          device_id: string
+          id?: string
+          notified_email?: boolean | null
+          parc_id: string
+          status?: Database["public"]["Enums"]["alert_status"] | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          cve_id?: string
+          device_id?: string
+          id?: string
+          notified_email?: boolean | null
+          parc_id?: string
+          status?: Database["public"]["Enums"]["alert_status"] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alerts_cve_id_fkey"
+            columns: ["cve_id"]
+            isOneToOne: false
+            referencedRelation: "cves"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "alerts_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "alerts_parc_id_fkey"
+            columns: ["parc_id"]
+            isOneToOne: false
+            referencedRelation: "parcs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clients: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      cves: {
+        Row: {
+          affected_products: string[] | null
+          created_at: string | null
+          cve_id: string
+          cvss_score: number | null
+          description: string | null
+          id: string
+          published_at: string | null
+          reference_links: string[] | null
+          severity: Database["public"]["Enums"]["severity"]
+        }
+        Insert: {
+          affected_products?: string[] | null
+          created_at?: string | null
+          cve_id: string
+          cvss_score?: number | null
+          description?: string | null
+          id?: string
+          published_at?: string | null
+          reference_links?: string[] | null
+          severity: Database["public"]["Enums"]["severity"]
+        }
+        Update: {
+          affected_products?: string[] | null
+          created_at?: string | null
+          cve_id?: string
+          cvss_score?: number | null
+          description?: string | null
+          id?: string
+          published_at?: string | null
+          reference_links?: string[] | null
+          severity?: Database["public"]["Enums"]["severity"]
+        }
+        Relationships: []
+      }
+      devices: {
+        Row: {
+          created_at: string | null
+          device_type: Database["public"]["Enums"]["device_type"]
+          id: string
+          is_active: boolean | null
+          last_sync: string | null
+          name: string
+          os_version: string | null
+          parc_id: string
+          rmm_source: string | null
+          updated_at: string | null
+          vendor: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          device_type: Database["public"]["Enums"]["device_type"]
+          id?: string
+          is_active?: boolean | null
+          last_sync?: string | null
+          name: string
+          os_version?: string | null
+          parc_id: string
+          rmm_source?: string | null
+          updated_at?: string | null
+          vendor?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          device_type?: Database["public"]["Enums"]["device_type"]
+          id?: string
+          is_active?: boolean | null
+          last_sync?: string | null
+          name?: string
+          os_version?: string | null
+          parc_id?: string
+          rmm_source?: string | null
+          updated_at?: string | null
+          vendor?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "devices_parc_id_fkey"
+            columns: ["parc_id"]
+            isOneToOne: false
+            referencedRelation: "parcs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      integrations: {
+        Row: {
+          api_key_encrypted: string | null
+          connected_at: string | null
+          created_at: string | null
+          id: string
+          integration_type: Database["public"]["Enums"]["integration_type"]
+          is_active: boolean | null
+          last_sync: string | null
+          parc_id: string
+          sync_error: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          api_key_encrypted?: string | null
+          connected_at?: string | null
+          created_at?: string | null
+          id?: string
+          integration_type: Database["public"]["Enums"]["integration_type"]
+          is_active?: boolean | null
+          last_sync?: string | null
+          parc_id: string
+          sync_error?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          api_key_encrypted?: string | null
+          connected_at?: string | null
+          created_at?: string | null
+          id?: string
+          integration_type?: Database["public"]["Enums"]["integration_type"]
+          is_active?: boolean | null
+          last_sync?: string | null
+          parc_id?: string
+          sync_error?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integrations_parc_id_fkey"
+            columns: ["parc_id"]
+            isOneToOne: false
+            referencedRelation: "parcs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      parcs: {
+        Row: {
+          client_id: string | null
+          created_at: string | null
+          id: string
+          name: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parcs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          email: string
+          full_name: string | null
+          id: string
+          plan: Database["public"]["Enums"]["user_plan"]
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          full_name?: string | null
+          id: string
+          plan?: Database["public"]["Enums"]["user_plan"]
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          full_name?: string | null
+          id?: string
+          plan?: Database["public"]["Enums"]["user_plan"]
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +296,11 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      alert_status: "new" | "read" | "dismissed"
+      device_type: "linux" | "windows" | "vmware" | "network" | "other"
+      integration_type: "datto" | "ninjaone" | "nable"
+      severity: "critical" | "high" | "medium" | "low"
+      user_plan: "enterprise" | "multi_tenant"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +427,12 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      alert_status: ["new", "read", "dismissed"],
+      device_type: ["linux", "windows", "vmware", "network", "other"],
+      integration_type: ["datto", "ninjaone", "nable"],
+      severity: ["critical", "high", "medium", "low"],
+      user_plan: ["enterprise", "multi_tenant"],
+    },
   },
 } as const
