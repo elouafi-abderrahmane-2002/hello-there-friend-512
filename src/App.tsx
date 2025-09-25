@@ -8,6 +8,11 @@ import { Layout } from "@/components/layout/Layout";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
+import Devices from "./pages/Devices";
+import Alerts from "./pages/Alerts";
+import Clients from "./pages/Clients";
+import Integrations from "./pages/Integrations";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -65,27 +70,27 @@ const App = () => (
             } />
             <Route path="/devices" element={
               <ProtectedRoute>
-                <div>Devices Page - Coming Soon</div>
+                <Devices />
               </ProtectedRoute>
             } />
             <Route path="/alerts" element={
               <ProtectedRoute>
-                <div>Alerts Page - Coming Soon</div>
+                <Alerts />
               </ProtectedRoute>
             } />
             <Route path="/clients" element={
               <ProtectedRoute>
-                <div>Clients Page - Coming Soon</div>
+                <Clients />
               </ProtectedRoute>
             } />
             <Route path="/integrations" element={
               <ProtectedRoute>
-                <div>Integrations Page - Coming Soon</div>
+                <Integrations />
               </ProtectedRoute>
             } />
             <Route path="/settings" element={
               <ProtectedRoute>
-                <div>Settings Page - Coming Soon</div>
+                <Settings />
               </ProtectedRoute>
             } />
             <Route path="*" element={<NotFound />} />
