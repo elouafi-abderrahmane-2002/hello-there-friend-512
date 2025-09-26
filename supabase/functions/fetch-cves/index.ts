@@ -42,6 +42,60 @@ interface NVDResponse {
   totalResults: number;
 }
 
+interface CISAVulnerability {
+  cveID: string;
+  vendorProject: string;
+  product: string;
+  vulnerabilityName: string;
+  shortDescription: string;
+  dateAdded: string;
+  dueDate: string;
+  knownRansomwareCampaignUse: string;
+  requiredAction: string;
+  notes: string;
+  cwes: string[];
+}
+
+interface CISAResponse {
+  title: string;
+  catalogVersion: string;
+  dateReleased: string;
+  count: number;
+  vulnerabilities: CISAVulnerability[];
+}
+
+async function fetchFromNVD(startDateStr: string, endDateStr: string): Promise<NVDResponse> {
+  const nvdUrl = `https://services.nvd.nist.gov/rest/json/cves/2.0?pubStartDate=${startDateStr}&pubEndDate=${endDateStr}&resultsPerPage=100`;
+  
+  const nvdResponse = await fetch(nvdUrl, {
+    headers: {
+      'User-Agent': 'ThreatPulse-CVE-Monitor/1.0'
+    }
+  });
+
+  if (!nvdResponse.ok) {
+    throw new Error(`NVD API error: ${nvdResponse.status} ${nvdResponse.statusText}`);
+  }
+
+  return await nvdResponse.json();
+}
+
+async function fetchFromCISA(): Promise<CISAResponse> {
+  const cisaUrl = 'https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json';
+  
+  const cisaResponse = await fetch(cisaUrl, {
+    headers: {
+      'User-Agent': 'ThreatPulse-CVE-Monitor/1.0'
+    }
+  });
+
+  if (!cisaResponse.ok) {
+    throw new Error(`CISA API error: ${cisaResponse.status} ${cisaResponse.statusText}`);
+  }
+
+  return await cisaResponse.json();
+}
+
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -74,26 +128,18 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`Fetching CVEs from ${startDateStr} to ${endDateStr}`);
 
-    // Fetch CVEs from NVD API
-    const nvdUrl = `https://services.nvd.nist.gov/rest/json/cves/2.0?pubStartDate=${startDateStr}&pubEndDate=${endDateStr}&resultsPerPage=100`;
-    
-    const nvdResponse = await fetch(nvdUrl, {
-      headers: {
-        'User-Agent': 'ThreatPulse-CVE-Monitor/1.0'
-      }
-    });
-
-    if (!nvdResponse.ok) {
-      throw new Error(`NVD API error: ${nvdResponse.status} ${nvdResponse.statusText}`);
-    }
-
-    const nvdData: NVDResponse = await nvdResponse.json();
-    console.log(`Found ${nvdData.vulnerabilities.length} CVEs from NVD`);
-
     let insertedCount = 0;
     let skippedCount = 0;
 
-    // Process each CVE
+    // Fetch from both NVD and CISA APIs in parallel
+    const [nvdData, cisaData] = await Promise.all([
+      fetchFromNVD(startDateStr, endDateStr),
+      fetchFromCISA()
+    ]);
+
+    console.log(`Found ${nvdData.vulnerabilities.length} CVEs from NVD and ${cisaData.vulnerabilities.length} from CISA`);
+
+    // Process NVD CVEs
     for (const item of nvdData.vulnerabilities) {
       const cve = item.cve;
       
@@ -128,12 +174,12 @@ const handler = async (req: Request): Promise<Response> => {
       }
 
       // Get description (prefer English)
-      const description = cve.descriptions.find(d => d.lang === 'en')?.value || 
+      const description = cve.descriptions.find((d: any) => d.lang === 'en')?.value || 
                          cve.descriptions[0]?.value || 
                          'No description available';
 
       // Extract reference links
-      const referenceLinks = cve.references.map(ref => ref.url);
+      const referenceLinks = cve.references.map((ref: any) => ref.url);
 
       // Extract affected products from description (simple keyword matching)
       const affectedProducts: string[] = [];
@@ -155,14 +201,57 @@ const handler = async (req: Request): Promise<Response> => {
           severity: severity,
           published_at: cve.published,
           affected_products: affectedProducts,
-          reference_links: referenceLinks.slice(0, 10) // Limit number of references
+          reference_links: referenceLinks.slice(0, 10), // Limit number of references
+          source: 'nvd'
         });
 
       if (error) {
-        console.error(`Error inserting CVE ${cve.id}:`, error);
+        console.error(`Error inserting NVD CVE ${cve.id}:`, error);
       } else {
         insertedCount++;
-        console.log(`Inserted CVE: ${cve.id}`);
+        console.log(`Inserted NVD CVE: ${cve.id}`);
+      }
+    }
+
+    // Process CISA CVEs
+    for (const vuln of cisaData.vulnerabilities) {
+      // Check if CVE already exists
+      const { data: existingCve } = await supabase
+        .from('cves')
+        .select('id')
+        .eq('cve_id', vuln.cveID)
+        .single();
+
+      if (existingCve) {
+        skippedCount++;
+        continue;
+      }
+
+      // Insert CISA CVE into database (CISA vulnerabilities are critical by nature)
+      const { error } = await supabase
+        .from('cves')
+        .insert({
+          cve_id: vuln.cveID,
+          description: vuln.shortDescription.substring(0, 2000),
+          severity: 'critical', // CISA vulnerabilities are known exploited, so critical
+          published_at: vuln.dateAdded,
+          vendor_project: vuln.vendorProject,
+          product: vuln.product,
+          vulnerability_name: vuln.vulnerabilityName,
+          date_added: vuln.dateAdded,
+          due_date: vuln.dueDate,
+          known_ransomware_campaign_use: vuln.knownRansomwareCampaignUse,
+          required_action: vuln.requiredAction,
+          notes: vuln.notes,
+          cwes: vuln.cwes,
+          source: 'cisa'
+        });
+
+      if (error) {
+        console.error(`Error inserting CISA CVE ${vuln.cveID}:`, error);
+      } else {
+        insertedCount++;
+        console.log(`Inserted CISA CVE: ${vuln.cveID}`);
       }
     }
 

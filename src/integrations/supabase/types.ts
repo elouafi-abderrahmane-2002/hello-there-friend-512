@@ -99,33 +99,63 @@ export type Database = {
           created_at: string | null
           cve_id: string
           cvss_score: number | null
+          cwes: string[] | null
+          date_added: string | null
           description: string | null
+          due_date: string | null
           id: string
+          known_ransomware_campaign_use: string | null
+          notes: string | null
+          product: string | null
           published_at: string | null
           reference_links: string[] | null
+          required_action: string | null
           severity: Database["public"]["Enums"]["severity"]
+          source: string | null
+          vendor_project: string | null
+          vulnerability_name: string | null
         }
         Insert: {
           affected_products?: string[] | null
           created_at?: string | null
           cve_id: string
           cvss_score?: number | null
+          cwes?: string[] | null
+          date_added?: string | null
           description?: string | null
+          due_date?: string | null
           id?: string
+          known_ransomware_campaign_use?: string | null
+          notes?: string | null
+          product?: string | null
           published_at?: string | null
           reference_links?: string[] | null
+          required_action?: string | null
           severity: Database["public"]["Enums"]["severity"]
+          source?: string | null
+          vendor_project?: string | null
+          vulnerability_name?: string | null
         }
         Update: {
           affected_products?: string[] | null
           created_at?: string | null
           cve_id?: string
           cvss_score?: number | null
+          cwes?: string[] | null
+          date_added?: string | null
           description?: string | null
+          due_date?: string | null
           id?: string
+          known_ransomware_campaign_use?: string | null
+          notes?: string | null
+          product?: string | null
           published_at?: string | null
           reference_links?: string[] | null
+          required_action?: string | null
           severity?: Database["public"]["Enums"]["severity"]
+          source?: string | null
+          vendor_project?: string | null
+          vulnerability_name?: string | null
         }
         Relationships: []
       }
