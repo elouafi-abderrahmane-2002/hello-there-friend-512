@@ -6,12 +6,16 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Laptop, Trash2, RefreshCw } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Plus, Laptop, Trash2, RefreshCw, Download } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
 import { z } from "zod";
+import { useAuditLog } from "@/hooks/useAuditLog";
+import { useRoles } from "@/hooks/useRoles";
+import { exportToCSV, generateDeviceExport } from "@/utils/exportData";
 
 const deviceSchema = z.object({
   name: z.string().trim().min(1, "Device name is required").max(100, "Name must be less than 100 characters"),
@@ -38,10 +42,13 @@ type DeviceFormData = z.infer<typeof deviceSchema>;
 
 export default function Devices() {
   const { user, profile } = useAuth();
+  const { canEdit } = useRoles();
+  const { logAudit } = useAuditLog();
   const [devices, setDevices] = useState<Device[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAddingDevice, setIsAddingDevice] = useState(false);
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [selectedDevices, setSelectedDevices] = useState<Set<string>>(new Set());
   const [formData, setFormData] = useState<DeviceFormData>({
     name: '',
     device_type: 'linux',
@@ -179,6 +186,11 @@ export default function Devices() {
           title: "Device added",
           description: `${formData.name} has been added successfully`
         });
+        await logAudit({
+          action: 'device_create',
+          entityType: 'device',
+          details: { name: formData.name, type: formData.device_type }
+        });
         setFormData({ name: '', device_type: 'linux', os_version: '', vendor: '' });
         setShowAddDialog(false);
         fetchDevices();
@@ -195,6 +207,7 @@ export default function Devices() {
   };
 
   const handleDeleteDevice = async (deviceId: string, deviceName: string) => {
+    if (!canEdit) return;
     try {
       const { error } = await supabase
         .from('devices')
@@ -208,6 +221,12 @@ export default function Devices() {
           variant: "destructive"
         });
       } else {
+        await logAudit({
+          action: 'device_delete',
+          entityType: 'device',
+          entityId: deviceId,
+          details: { name: deviceName }
+        });
         toast({
           title: "Device deleted",
           description: `${deviceName} has been removed`
@@ -221,6 +240,69 @@ export default function Devices() {
         variant: "destructive"
       });
     }
+  };
+
+  const handleBulkDelete = async () => {
+    if (!canEdit || selectedDevices.size === 0) return;
+    try {
+      const { error } = await supabase
+        .from('devices')
+        .delete()
+        .in('id', Array.from(selectedDevices));
+
+      if (error) throw error;
+
+      await logAudit({
+        action: 'device_delete',
+        entityType: 'device',
+        details: { count: selectedDevices.size }
+      });
+
+      toast({
+        title: "Devices deleted",
+        description: `${selectedDevices.size} devices removed successfully`
+      });
+      setSelectedDevices(new Set());
+      fetchDevices();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete devices",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleExport = () => {
+    const exportData = generateDeviceExport(devices);
+    exportToCSV(exportData, `devices-${new Date().toISOString()}`);
+    logAudit({
+      action: 'export_data',
+      entityType: 'devices',
+      details: { count: exportData.length }
+    });
+    toast({
+      title: "Export successful",
+      description: `${exportData.length} devices exported`
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedDevices.size === devices.length) {
+      setSelectedDevices(new Set());
+    } else {
+      setSelectedDevices(new Set(devices.map(d => d.id)));
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    const newSelection = new Set(selectedDevices);
+    if (newSelection.has(id)) {
+      newSelection.delete(id);
+    } else {
+      newSelection.add(id);
+    }
+    setSelectedDevices(newSelection);
   };
 
   const getDeviceTypeBadgeVariant = (type: Device['device_type']) => {
@@ -255,6 +337,16 @@ export default function Devices() {
           </p>
         </div>
         <div className="flex space-x-2">
+          {selectedDevices.size > 0 && canEdit && (
+            <Button onClick={handleBulkDelete} variant="destructive">
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete {selectedDevices.size} Selected
+            </Button>
+          )}
+          <Button variant="outline" onClick={handleExport}>
+            <Download className="h-4 w-4 mr-2" />
+            Export
+          </Button>
           <Button variant="outline" onClick={fetchDevices}>
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh
@@ -384,6 +476,14 @@ export default function Devices() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-[50px]">
+                    {canEdit && (
+                      <Checkbox
+                        checked={selectedDevices.size === devices.length && devices.length > 0}
+                        onCheckedChange={toggleSelectAll}
+                      />
+                    )}
+                  </TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Vendor</TableHead>
@@ -396,6 +496,14 @@ export default function Devices() {
               <TableBody>
                 {devices.map((device) => (
                   <TableRow key={device.id}>
+                    <TableCell>
+                      {canEdit && (
+                        <Checkbox
+                          checked={selectedDevices.has(device.id)}
+                          onCheckedChange={() => toggleSelect(device.id)}
+                        />
+                      )}
+                    </TableCell>
                     <TableCell className="font-medium">{device.name}</TableCell>
                     <TableCell>
                       <Badge variant={getDeviceTypeBadgeVariant(device.device_type)}>
@@ -413,14 +521,16 @@ export default function Devices() {
                       {new Date(device.last_sync).toLocaleDateString()}
                     </TableCell>
                     <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteDevice(device.id, device.name)}
-                        className="text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      {canEdit && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteDevice(device.id, device.name)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}

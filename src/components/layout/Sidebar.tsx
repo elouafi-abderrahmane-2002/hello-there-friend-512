@@ -1,4 +1,4 @@
-import { Shield, BarChart3, Users, Laptop, AlertTriangle, Settings, Building2 } from "lucide-react";
+import { Shield, BarChart3, Users, Laptop, AlertTriangle, Settings, Building2, FileText, TrendingUp } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   Sidebar,
@@ -21,6 +21,12 @@ const navigationItems = [
     always: true
   },
   {
+    title: "Analytics", 
+    url: "/analytics",
+    icon: TrendingUp,
+    always: true
+  },
+  {
     title: "Devices", 
     url: "/devices",
     icon: Laptop,
@@ -30,6 +36,12 @@ const navigationItems = [
     title: "Alerts",
     url: "/alerts", 
     icon: AlertTriangle,
+    always: true
+  },
+  {
+    title: "Audit Logs",
+    url: "/audit-logs",
+    icon: FileText,
     always: true
   },
   {

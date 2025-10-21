@@ -617,21 +617,21 @@ export type Database = {
       }
     }
     Views: {
-      dashboard_analytics: {
-        Row: {
-          active_alerts: number | null
-          avg_cvss_score: number | null
-          critical_alerts: number | null
-          high_alerts: number | null
-          last_alert_time: string | null
-          new_alerts: number | null
-          total_devices: number | null
-          user_id: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
+      get_dashboard_analytics: {
+        Args: { _user_id: string }
+        Returns: {
+          active_alerts: number
+          avg_cvss_score: number
+          critical_alerts: number
+          high_alerts: number
+          last_alert_time: string
+          new_alerts: number
+          total_devices: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

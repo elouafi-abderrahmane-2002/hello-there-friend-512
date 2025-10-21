@@ -5,10 +5,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertTriangle, Shield, Search, Filter, ExternalLink, CheckCircle } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { AlertTriangle, Shield, Search, Filter, ExternalLink, CheckCircle, Download, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
+import { useAuditLog } from "@/hooks/useAuditLog";
+import { useRoles } from "@/hooks/useRoles";
+import { exportToCSV, generateAlertExport } from "@/utils/exportData";
 
 type Alert = {
   id: string;
@@ -35,11 +39,14 @@ type Alert = {
 
 export default function Alerts() {
   const { user } = useAuth();
+  const { canEdit } = useRoles();
+  const { logAudit } = useAuditLog();
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [severityFilter, setSeverityFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [selectedAlerts, setSelectedAlerts] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetchAlerts();
@@ -133,6 +140,7 @@ export default function Alerts() {
   };
 
   const dismissAlert = async (alertId: string) => {
+    if (!canEdit) return;
     try {
       const { error } = await supabase
         .from('alerts')
@@ -146,6 +154,11 @@ export default function Alerts() {
           variant: "destructive"
         });
       } else {
+        await logAudit({
+          action: 'alert_dismiss',
+          entityType: 'alert',
+          entityId: alertId
+        });
         toast({
           title: "Alert dismissed",
           description: "The alert has been dismissed"
@@ -159,6 +172,69 @@ export default function Alerts() {
         variant: "destructive"
       });
     }
+  };
+
+  const handleBulkDismiss = async () => {
+    if (!canEdit || selectedAlerts.size === 0) return;
+    try {
+      const { error } = await supabase
+        .from('alerts')
+        .update({ status: 'dismissed' })
+        .in('id', Array.from(selectedAlerts));
+
+      if (error) throw error;
+
+      await logAudit({
+        action: 'alert_dismiss',
+        entityType: 'alert',
+        details: { count: selectedAlerts.size }
+      });
+
+      toast({
+        title: "Alerts dismissed",
+        description: `${selectedAlerts.size} alerts dismissed successfully`
+      });
+      setSelectedAlerts(new Set());
+      fetchAlerts();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to dismiss alerts",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleExport = () => {
+    const exportData = generateAlertExport(filteredAlerts);
+    exportToCSV(exportData, `alerts-${new Date().toISOString()}`);
+    logAudit({
+      action: 'export_data',
+      entityType: 'alerts',
+      details: { count: exportData.length }
+    });
+    toast({
+      title: "Export successful",
+      description: `${exportData.length} alerts exported`
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedAlerts.size === filteredAlerts.length) {
+      setSelectedAlerts(new Set());
+    } else {
+      setSelectedAlerts(new Set(filteredAlerts.map(a => a.id)));
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    const newSelection = new Set(selectedAlerts);
+    if (newSelection.has(id)) {
+      newSelection.delete(id);
+    } else {
+      newSelection.add(id);
+    }
+    setSelectedAlerts(newSelection);
   };
 
   const getSeverityBadgeVariant = (severity: string) => {
@@ -201,11 +277,25 @@ export default function Alerts() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Security Alerts</h1>
-        <p className="text-muted-foreground">
-          Monitor and manage CVE alerts for your devices
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Security Alerts</h1>
+          <p className="text-muted-foreground">
+            Monitor and manage CVE alerts for your devices
+          </p>
+        </div>
+        <div className="flex gap-2">
+          {selectedAlerts.size > 0 && canEdit && (
+            <Button onClick={handleBulkDismiss} variant="destructive">
+              <Trash2 className="h-4 w-4 mr-2" />
+              Dismiss {selectedAlerts.size} Selected
+            </Button>
+          )}
+          <Button onClick={handleExport} variant="outline">
+            <Download className="h-4 w-4 mr-2" />
+            Export
+          </Button>
+        </div>
       </div>
 
       {/* Alert Stats */}
@@ -325,6 +415,14 @@ export default function Alerts() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-[50px]">
+                    {canEdit && (
+                      <Checkbox
+                        checked={selectedAlerts.size === filteredAlerts.length && filteredAlerts.length > 0}
+                        onCheckedChange={toggleSelectAll}
+                      />
+                    )}
+                  </TableHead>
                   <TableHead>CVE ID</TableHead>
                   <TableHead>Device</TableHead>
                   <TableHead>Severity</TableHead>
@@ -337,6 +435,14 @@ export default function Alerts() {
               <TableBody>
                 {filteredAlerts.map((alert) => (
                   <TableRow key={alert.id}>
+                    <TableCell>
+                      {canEdit && (
+                        <Checkbox
+                          checked={selectedAlerts.has(alert.id)}
+                          onCheckedChange={() => toggleSelect(alert.id)}
+                        />
+                      )}
+                    </TableCell>
                     <TableCell className="font-medium">
                       <div className="flex items-center space-x-2">
                         <span>{alert.cves.cve_id}</span>

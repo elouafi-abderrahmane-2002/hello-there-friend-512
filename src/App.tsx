@@ -8,8 +8,10 @@ import { Layout } from "@/components/layout/Layout";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
+import Analytics from "./pages/Analytics";
 import Devices from "./pages/Devices";
 import Alerts from "./pages/Alerts";
+import AuditLogs from "./pages/AuditLogs";
 import Clients from "./pages/Clients";
 import Integrations from "./pages/Integrations";
 import Settings from "./pages/Settings";
@@ -68,6 +70,11 @@ const App = () => (
                 <Dashboard />
               </ProtectedRoute>
             } />
+            <Route path="/analytics" element={
+              <ProtectedRoute>
+                <Analytics />
+              </ProtectedRoute>
+            } />
             <Route path="/devices" element={
               <ProtectedRoute>
                 <Devices />
@@ -76,6 +83,11 @@ const App = () => (
             <Route path="/alerts" element={
               <ProtectedRoute>
                 <Alerts />
+              </ProtectedRoute>
+            } />
+            <Route path="/audit-logs" element={
+              <ProtectedRoute>
+                <AuditLogs />
               </ProtectedRoute>
             } />
             <Route path="/clients" element={
