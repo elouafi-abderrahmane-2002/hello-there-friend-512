@@ -14,35 +14,100 @@ export type Database = {
   }
   public: {
     Tables: {
+      alert_rules: {
+        Row: {
+          auto_dismiss_low: boolean | null
+          created_at: string
+          description: string | null
+          device_types: string[] | null
+          email_notification: boolean | null
+          id: string
+          is_active: boolean | null
+          name: string
+          parc_id: string
+          severity_threshold: Database["public"]["Enums"]["severity"]
+          updated_at: string
+          vendor_filter: string[] | null
+          webhook_url: string | null
+        }
+        Insert: {
+          auto_dismiss_low?: boolean | null
+          created_at?: string
+          description?: string | null
+          device_types?: string[] | null
+          email_notification?: boolean | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          parc_id: string
+          severity_threshold?: Database["public"]["Enums"]["severity"]
+          updated_at?: string
+          vendor_filter?: string[] | null
+          webhook_url?: string | null
+        }
+        Update: {
+          auto_dismiss_low?: boolean | null
+          created_at?: string
+          description?: string | null
+          device_types?: string[] | null
+          email_notification?: boolean | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          parc_id?: string
+          severity_threshold?: Database["public"]["Enums"]["severity"]
+          updated_at?: string
+          vendor_filter?: string[] | null
+          webhook_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alert_rules_parc_id_fkey"
+            columns: ["parc_id"]
+            isOneToOne: false
+            referencedRelation: "parcs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       alerts: {
         Row: {
+          assigned_to: string | null
           created_at: string | null
           cve_id: string
           device_id: string
           id: string
           notified_email: boolean | null
           parc_id: string
+          risk_score: number | null
           status: Database["public"]["Enums"]["alert_status"] | null
+          tags: string[] | null
           updated_at: string | null
         }
         Insert: {
+          assigned_to?: string | null
           created_at?: string | null
           cve_id: string
           device_id: string
           id?: string
           notified_email?: boolean | null
           parc_id: string
+          risk_score?: number | null
           status?: Database["public"]["Enums"]["alert_status"] | null
+          tags?: string[] | null
           updated_at?: string | null
         }
         Update: {
+          assigned_to?: string | null
           created_at?: string | null
           cve_id?: string
           device_id?: string
           id?: string
           notified_email?: boolean | null
           parc_id?: string
+          risk_score?: number | null
           status?: Database["public"]["Enums"]["alert_status"] | null
+          tags?: string[] | null
           updated_at?: string | null
         }
         Relationships: [
@@ -69,6 +134,42 @@ export type Database = {
           },
         ]
       }
+      audit_logs: {
+        Row: {
+          action: Database["public"]["Enums"]["audit_action"]
+          created_at: string
+          details: Json | null
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          ip_address: unknown | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: Database["public"]["Enums"]["audit_action"]
+          created_at?: string
+          details?: Json | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          ip_address?: unknown | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: Database["public"]["Enums"]["audit_action"]
+          created_at?: string
+          details?: Json | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          ip_address?: unknown | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       clients: {
         Row: {
           created_at: string | null
@@ -92,6 +193,38 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      cve_tags: {
+        Row: {
+          created_at: string
+          cve_id: string
+          id: string
+          tag: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          cve_id: string
+          id?: string
+          tag: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          cve_id?: string
+          id?: string
+          tag?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cve_tags_cve_id_fkey"
+            columns: ["cve_id"]
+            isOneToOne: false
+            referencedRelation: "cves"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cves: {
         Row: {
@@ -159,6 +292,77 @@ export type Database = {
         }
         Relationships: []
       }
+      device_group_members: {
+        Row: {
+          added_at: string
+          device_id: string
+          group_id: string
+        }
+        Insert: {
+          added_at?: string
+          device_id: string
+          group_id: string
+        }
+        Update: {
+          added_at?: string
+          device_id?: string
+          group_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "device_group_members_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "device_group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "device_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      device_groups: {
+        Row: {
+          color: string | null
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          parc_id: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          parc_id: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          parc_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "device_groups_parc_id_fkey"
+            columns: ["parc_id"]
+            isOneToOne: false
+            referencedRelation: "parcs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       devices: {
         Row: {
           created_at: string | null
@@ -167,9 +371,11 @@ export type Database = {
           is_active: boolean | null
           last_sync: string | null
           name: string
+          notes: string | null
           os_version: string | null
           parc_id: string
           rmm_source: string | null
+          tags: string[] | null
           updated_at: string | null
           vendor: string | null
         }
@@ -180,9 +386,11 @@ export type Database = {
           is_active?: boolean | null
           last_sync?: string | null
           name: string
+          notes?: string | null
           os_version?: string | null
           parc_id: string
           rmm_source?: string | null
+          tags?: string[] | null
           updated_at?: string | null
           vendor?: string | null
         }
@@ -193,9 +401,11 @@ export type Database = {
           is_active?: boolean | null
           last_sync?: string | null
           name?: string
+          notes?: string | null
           os_version?: string | null
           parc_id?: string
           rmm_source?: string | null
+          tags?: string[] | null
           updated_at?: string | null
           vendor?: string | null
         }
@@ -208,6 +418,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      export_history: {
+        Row: {
+          created_at: string
+          export_type: string
+          file_size: number | null
+          filters: Json | null
+          format: string
+          id: string
+          record_count: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          export_type: string
+          file_size?: number | null
+          filters?: Json | null
+          format: string
+          id?: string
+          record_count?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          export_type?: string
+          file_size?: number | null
+          filters?: Json | null
+          format?: string
+          id?: string
+          record_count?: number | null
+          user_id?: string
+        }
+        Relationships: []
       }
       integrations: {
         Row: {
@@ -318,15 +561,113 @@ export type Database = {
         }
         Relationships: []
       }
+      saved_filters: {
+        Row: {
+          created_at: string
+          filter_config: Json
+          filter_type: string
+          id: string
+          is_default: boolean | null
+          name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          filter_config: Json
+          filter_type: string
+          id?: string
+          is_default?: boolean | null
+          name: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          filter_config?: Json
+          filter_type?: string
+          id?: string
+          is_default?: boolean | null
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          granted_at: string
+          granted_by: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
-      [_ in never]: never
+      dashboard_analytics: {
+        Row: {
+          active_alerts: number | null
+          avg_cvss_score: number | null
+          critical_alerts: number | null
+          high_alerts: number | null
+          last_alert_time: string | null
+          new_alerts: number | null
+          total_devices: number | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      log_audit_event: {
+        Args: {
+          p_action: Database["public"]["Enums"]["audit_action"]
+          p_details?: Json
+          p_entity_id?: string
+          p_entity_type?: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       alert_status: "new" | "read" | "dismissed"
+      app_role: "admin" | "analyst" | "viewer"
+      audit_action:
+        | "user_login"
+        | "user_logout"
+        | "device_create"
+        | "device_update"
+        | "device_delete"
+        | "alert_create"
+        | "alert_update"
+        | "alert_dismiss"
+        | "cve_fetch"
+        | "export_data"
+        | "settings_update"
+        | "role_grant"
+        | "role_revoke"
+        | "integration_connect"
+        | "integration_disconnect"
       device_type: "linux" | "windows" | "vmware" | "network" | "other"
       integration_type: "datto" | "ninjaone" | "nable"
       severity: "critical" | "high" | "medium" | "low"
@@ -459,6 +800,24 @@ export const Constants = {
   public: {
     Enums: {
       alert_status: ["new", "read", "dismissed"],
+      app_role: ["admin", "analyst", "viewer"],
+      audit_action: [
+        "user_login",
+        "user_logout",
+        "device_create",
+        "device_update",
+        "device_delete",
+        "alert_create",
+        "alert_update",
+        "alert_dismiss",
+        "cve_fetch",
+        "export_data",
+        "settings_update",
+        "role_grant",
+        "role_revoke",
+        "integration_connect",
+        "integration_disconnect",
+      ],
       device_type: ["linux", "windows", "vmware", "network", "other"],
       integration_type: ["datto", "ninjaone", "nable"],
       severity: ["critical", "high", "medium", "low"],
